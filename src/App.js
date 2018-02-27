@@ -3,8 +3,9 @@ import { Container, Row, Col, Button, FormGroup, Input, Label } from 'reactstrap
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import GoogleMapReact from 'google-map-react';
 import {Firestore} from './fire.js';
+import './App.css';
 
-const UserMarker = ({ text }) => <div>{text}</div>;
+const UserMarker = ({ text }) => <div><img style={{width:'40px'}} src="map-marker-icon.png" /></div>;
 
 export default class App extends Component {
   render() {
@@ -27,8 +28,8 @@ class ShareLocation extends Component {
     super(props);
 
     this.state = {
-      latitude: 59.95,
-      longitude: 30.33,
+      latitude: -23.52,
+      longitude: -46.88,
       error: null,
       shareId: '',
       watchId: null
@@ -96,50 +97,47 @@ class ShareLocation extends Component {
   }
 
   stopSharing() {
-    if (this.state.watchId) navigator.geolocation.clearWatch(this.state.watchId);
+    if (this.state.watchId) {
+      navigator.geolocation.clearWatch(this.state.watchId);
+      this.setState({whatchId: null});
+    }
   }
 
   render() {
-    return (
+
+    if (!this.state.watchId)
+      return (
         <Container className="my-5">
           <Row>
             <Col className="text-center">
-            {this.state.watchId ?
-              (
-                <div>
-                  <Button onClick={this.stopSharing}>Stop sharing</Button>
-                  <FormGroup className="mt-3">
-                    <Label>Link to share:</Label>
-                    <Input readOnly={true} type="text" value={'https://'+window.location.hostname+'/'+this.state.shareId} />
-                  </FormGroup>
-                </div>
-              ) :
               <Button onClick={this.watchLocation}>Share location</Button>
-            }
-
-            {this.state.error ? <p>Error: {this.state.error}</p> : null}
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              {this.state.watchId ?
-              <GoogleMapReact
-                bootstrapURLKeys={{ key: 'AIzaSyBibKbFOjEH6wfR89SmtZWkwXm9jkJsm6w' }}
-                defaultZoom={8}
-                defaultCenter={{lat: 59.95, lng: 30.33}}
-                center={{lat: this.state.latitude, lng: this.state.longitude}}
-                style={{minHeight:'300px'}}
-              >
-                <UserMarker
-                  lat={this.state.latitude}
-                  lng={this.state.longitude}
-                  text={'You are here'}
-                />
-              </GoogleMapReact>
-              :''}
             </Col>
           </Row>
         </Container>
+      );
+
+
+    return (
+      <div>
+        <GoogleMapReact
+          bootstrapURLKeys={{ key: 'AIzaSyBibKbFOjEH6wfR89SmtZWkwXm9jkJsm6w' }}
+          defaultZoom={18}
+          defaultCenter={{lat: -23.52, lng: -46.88}}
+          center={{lat: this.state.latitude, lng: this.state.longitude}}
+          style={{minHeight:'800px'}}
+        >
+          <UserMarker
+            lat={this.state.latitude}
+            lng={this.state.longitude}
+            text={'You are here'}
+          />
+        </GoogleMapReact>
+
+        <div className="controls-top">
+          <Button onClick={this.stopSharing}>Stop sharing</Button>
+          <Input readOnly={true} type="text" value={'https://'+window.location.hostname+'/'+this.state.shareId} />
+        </div>
+      </div>
     );
   }
 }
@@ -149,8 +147,8 @@ class ViewLocation extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      latitude: 59.95,
-      longitude: 30.33
+      latitude: -23.52,
+      longitude: -46.88
     };
   }
 
@@ -166,19 +164,25 @@ class ViewLocation extends Component {
 
   render() {
     return (
+      <div>
         <GoogleMapReact
           bootstrapURLKeys={{ key: 'AIzaSyBibKbFOjEH6wfR89SmtZWkwXm9jkJsm6w' }}
-          defaultZoom={10}
-          defaultCenter={{lat: 59.95, lng: 30.33}}
-          center={{lat: this.state.position?this.state.position.latitude:59.95, lng: this.state.position?this.state.position.longitude:30.33}}
+          defaultZoom={18}
+          defaultCenter={{lat: -23.52, lng: -46.88}}
+          center={{lat: this.state.position?this.state.position.latitude:-23.52, lng: this.state.position?this.state.position.longitude:-46.88}}
           style={{minHeight:'300px'}}
         >
           <UserMarker
-            lat={this.state.position?this.state.position.latitude:59.95}
-            lng={this.state.position?this.state.position.longitude:30.33}
+            lat={this.state.position?this.state.position.latitude:-23.52}
+            lng={this.state.position?this.state.position.longitude:-46.88}
             text={'The object is here'}
           />
         </GoogleMapReact>
+        <div className="controls-top">
+          <strong>Speed:</strong> {this.state.position && this.state.position.speed?this.state.position.speed:'not available'} {' '}
+          <strong>Accuracy:</strong> {this.state.position && this.state.position.accuracy?this.state.position.accuracy:'0'}%
+        </div>
+      </div>
     );
   }
 }
