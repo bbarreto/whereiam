@@ -1,18 +1,34 @@
 import React, { Component } from 'react';
-import { Container, Row, Col, Button } from 'reactstrap';
+import { Container, Row, Col, Button, FormGroup, Input, Label } from 'reactstrap';
+import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import GoogleMapReact from 'google-map-react';
 import {Firestore} from './fire.js';
 
 const UserMarker = ({ text }) => <div>{text}</div>;
 
 export default class App extends Component {
+  render() {
+    return (
+
+      <BrowserRouter>
+        <Switch>
+          <Route exact path='/' component={ShareLocation}/>
+          <Route exact path='/:shareId' component={ViewLocation}/>
+        </Switch>
+      </BrowserRouter>
+
+    );
+  }
+}
+
+class ShareLocation extends Component {
 
   constructor(props) {
     super(props);
 
     this.state = {
-      latitude: null,
-      longitude: null,
+      latitude: 59.95,
+      longitude: 30.33,
       error: null,
       shareId: '',
       watchId: null
@@ -87,14 +103,25 @@ export default class App extends Component {
     return (
         <Container className="my-5">
           <Row>
-            <Col md={{size: 6}}>
-            {this.state.watchId ?  <Button onClick={this.stopSharing}>Stop sharing</Button> : <Button onClick={this.watchLocation}>Share location</Button>}
-
-            <input type="text" value={this.state.shareId} />
+            <Col className="text-center">
+            {this.state.watchId ?
+              (
+                <div>
+                  <Button onClick={this.stopSharing}>Stop sharing</Button>
+                  <FormGroup className="mt-3">
+                    <Label>Link to share:</Label>
+                    <Input readOnly={true} type="text" value={'https://'+window.location.hostname+'/'+this.state.shareId} />
+                  </FormGroup>
+                </div>
+              ) :
+              <Button onClick={this.watchLocation}>Share location</Button>
+            }
 
             {this.state.error ? <p>Error: {this.state.error}</p> : null}
             </Col>
-            <Col md={{size: 6}}>
+          </Row>
+          <Row>
+            <Col>
               {this.state.watchId ?
               <GoogleMapReact
                 bootstrapURLKeys={{ key: 'AIzaSyBibKbFOjEH6wfR89SmtZWkwXm9jkJsm6w' }}
@@ -113,6 +140,45 @@ export default class App extends Component {
             </Col>
           </Row>
         </Container>
+    );
+  }
+}
+
+class ViewLocation extends Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      latitude: 59.95,
+      longitude: 30.33
+    };
+  }
+
+  componentWillMount() {
+    var that = this;
+    Firestore.collection("shares").doc(this.props.match.params.shareId).collection("history").orderBy("created_at", "asc").onSnapshot((querySnapshot) => {
+      querySnapshot.forEach(function(doc) {
+        console.log(doc.data());
+        that.setState(doc.data());
+      });
+    });
+  }
+
+  render() {
+    return (
+        <GoogleMapReact
+          bootstrapURLKeys={{ key: 'AIzaSyBibKbFOjEH6wfR89SmtZWkwXm9jkJsm6w' }}
+          defaultZoom={10}
+          defaultCenter={{lat: 59.95, lng: 30.33}}
+          center={{lat: this.state.position?this.state.position.latitude:59.95, lng: this.state.position?this.state.position.longitude:30.33}}
+          style={{minHeight:'300px'}}
+        >
+          <UserMarker
+            lat={this.state.position?this.state.position.latitude:59.95}
+            lng={this.state.position?this.state.position.longitude:30.33}
+            text={'The object is here'}
+          />
+        </GoogleMapReact>
     );
   }
 }
